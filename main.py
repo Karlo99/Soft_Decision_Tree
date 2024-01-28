@@ -26,7 +26,7 @@ if __name__ == "__main__":
     lr = 1e-3              # learning rate
     weight_decaly = 5e-4   # weight decay
     batch_size = 128       # batch size
-    epochs = 50            # the number of training epochs
+    epochs = 2            # the number of training epochs
     log_interval = 100     # the number of batches to wait before printing logs
     use_cuda = False       # whether to use GPU
 
@@ -76,6 +76,8 @@ if __name__ == "__main__":
 
             batch_size = data.size()[0]
             data, target = data.to(device), target.to(device)
+            outer_product = tree.compute_avg_gradient_outer_product(data, target)
+            print(f"outer product gradient : {outer_product}")
             target_onehot = onehot_coding(target, device, output_dim)
 
             output, penalty = tree.forward(data, is_training_data=True)
@@ -131,3 +133,15 @@ if __name__ == "__main__":
             )
         )
         testing_acc_list.append(accuracy)
+        # with torch.no_grad():
+        #     tree.eval()
+        #     data, target = next(iter(train_loader))
+        #     data, target = data.to(device), target.to(device)
+        # #
+        #     # Compute the outer product
+        #     outer_product = tree.compute_avg_gradient_outer_product(data, target)
+        # #
+        # #     # Now you can evaluate or analyze the outer_product matrix
+        # #     # For example, print its shape or some of its values
+        # #     print("Outer product matrix shape:", outer_product.shape)
+        # #     print("Outer product matrix sample values:", outer_product[:5, :5])

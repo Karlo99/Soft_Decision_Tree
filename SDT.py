@@ -100,7 +100,7 @@ class SDT(nn.Module):
         path_prob = torch.unsqueeze(path_prob, dim=2)
         path_prob = torch.cat((path_prob, 1 - path_prob), dim=2)
 
-        _mu = X.data.new(batch_size, 1, 1).fill_(1.0)
+        _mu = torch.ones(batch_size, 1, 1, device=X.device)
         _penalty = torch.tensor(0.0).to(self.device)
 
         # Iterate through internal odes in each layer to compute the final path
@@ -169,3 +169,39 @@ class SDT(nn.Module):
                 " negative, but got {} instead."
             )
             raise ValueError(msg.format(self.lamda))
+
+    def compute_avg_gradient_outer_product(self, X, y_true):
+        """
+        Compute the average gradient of the internal nodes and then
+        calculate the outer product of this average gradient.
+
+        Parameters:
+        X : torch.Tensor
+            Input data.
+        y_true : torch.Tensor
+            True labels for the input data.
+
+        Returns:
+        torch.Tensor
+            The outer product of the averaged gradients.
+        """
+        # Reset gradients
+        self.zero_grad()
+
+        # Forward pass
+        y_pred, _ = self.forward(X, is_training_data=True)
+        criterion = torch.nn.CrossEntropyLoss()
+        loss = criterion(y_pred, y_true.view(-1))
+        loss += _
+        # Backward pass to compute gradients
+        loss.backward()
+
+        # Extract gradients from the internal nodes
+        gradients = [param.grad for param in self.inner_nodes.parameters() if param.grad is not None]
+
+        # Average the gradients
+        avg_gradient = sum(gradients) / len(gradients)
+
+        # Calculate and return the outer product of the averaged gradient
+        avg_gradient_flat = avg_gradient.view(-1)
+        return torch.outer(avg_gradient_flat, avg_gradient_flat)
